@@ -9,3 +9,4 @@ typechain-types
 cache
 artifacts
 
+e2e/service/private-storage

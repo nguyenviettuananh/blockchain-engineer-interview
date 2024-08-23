@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  op-node:
+    image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:dev
+    command: >
+      --l2=http://localhost:8551
+      --l2.jwt-secret=./jwt.txt    
+      --sequencer.enabled
+      --sequencer.l1-confs=3
+      --verifier.l1-confs=3
+      --rollup.config=./rollup.json
+      --rpc.addr=0.0.0.0
+      --rpc.port=8547
+      --p2p.disable
+      --rpc.enable-admin
+      --p2p.sequencer.key=${SEQ_KEY}
+      --l1=${L1_RPC}
+      --l1.rpckind=${RPC_KIND}
+    ports:
+      - "8547:8547"
+    environment:
+      - SEQ_KEY=${SEQ_KEY}
+      - L1_RPC=${L1_RPC}
+      - RPC_KIND=${RPC_KIND}
+    volumes:
+      - ./jwt.txt:/app/jwt.txt
+      - ./rollup.json:/app/rollup.json
+
+  op-batcher:
+    image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-batcher:dev
+    command: >
+      --l2-eth-rpc=http://localhost:8545
+      --rollup-rpc=http://localhost:8547
+      --poll-interval=1s
+      --sub-safety-margin=6
+      --num-confirmations=1
+      --safe-abort-nonce-too-low-count=3
+      --resubmission-timeout=30s
+      --rpc.addr=0.0.0.0
+      --rpc.port=8548
+      --rpc.enable-admin
+      --max-channel-duration=1
+      --l1-eth-rpc=${L1_RPC}
+      --private-key=${BATCHER_KEY}
+    ports:
+      - "8548:8548"
+    environment:
+      - L1_RPC=${L1_RPC}
+      - BATCHER_KEY=${BATCHER_KEY}
+
+  op-proposer:
+    image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-proposer:dev
+    command: >
+      --poll-interval=12s
+      --rpc.port=8560
+      --rollup-rpc=http://localhost:8547
+      --l2oo-address=${L2OO_ADDR}
+      --private-key=${PROPOSER_KEY}
+      --l1-eth-rpc=${L1_RPC}
+    ports:
+      - "8560:8560"
+    environment:
+      - L2OO_ADDR=${L2OO_ADDR}
+      - PROPOSER_KEY=${PROPOSER_KEY}
+      - L1_RPC=${L1_RPC}
